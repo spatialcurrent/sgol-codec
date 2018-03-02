@@ -4,6 +4,15 @@ type OperationFetch struct {
 	*AbstractOperationKey
 }
 
+func NewOperationFetch(key string) OperationFetch {
+	return OperationFetch{
+		&AbstractOperationKey{
+			AbstractOperation: &AbstractOperation{Type: "DISCARD"},
+			Key:               key,
+		},
+	}
+}
+
 func (op OperationFetch) Sgol() (string, error) {
-	return "FETCH "+op.Key, nil
+	return "FETCH " + op.Key, nil
 }

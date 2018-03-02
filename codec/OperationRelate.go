@@ -5,6 +5,13 @@ type OperationRelate struct {
 	Keys []string `json:"keys" bson:"keys" yaml:"keys" hcl:"keys"`
 }
 
+func NewOperationRelate(keys []string) OperationRelate {
+	return OperationRelate{
+		AbstractOperation: &AbstractOperation{Type: "DISCARD"},
+		Keys:              keys,
+	}
+}
+
 func (op OperationRelate) Sgol() (string, error) {
-	return "RELATE "+op.Keys[0], nil
+	return "RELATE " + op.Keys[0], nil
 }

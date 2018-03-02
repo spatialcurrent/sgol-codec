@@ -1,6 +1,6 @@
 package codec
 
 type QueryFunction struct {
-	Name string
+	Names string
 	Args []string
 }
