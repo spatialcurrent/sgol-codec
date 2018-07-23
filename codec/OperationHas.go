@@ -17,7 +17,7 @@ type OperationHas struct {
 	*AbstractOperationOutput
 	*AbstractOperationView
 	*AbstractOperationUpdate
-	Seeds                   SeedCollection  `json:"seeds" bson:"seeds" yaml:"seeds" hcl:"seeds"`
+	*AbstractOperationSeeds
 	SourceGroups                  GroupCollection `json:"source" bson:"source" yaml:"source" hcl:"source"`
 	Edges                   GroupCollection `json:"edges" bson:"edges" yaml:"edges" hcl:"edges"`
 	DestinationGroups             GroupCollection `json:"destination" bson:"destination" yaml:"destination" hcl:"destination"`
@@ -27,9 +27,6 @@ type OperationHas struct {
 	Depth                   int             `json:"depth" bson:"depth" yaml:"depth" hcl:"depth"`
 }
 
-func (op *OperationHas) SetSeeds(seeds SeedCollection) {
-	op.Seeds = seeds
-}
 
 func (op *OperationHas) SetSource(groups GroupCollection) {
 	op.SourceGroups = groups
@@ -68,9 +65,8 @@ func (op OperationHas) Validate(schema graph.Schema) error {
   return nil
 }
 
-
-func (op OperationHas) HasSeeds() bool {
-	return len(op.Seeds.Vertices) > 0
+func (op OperationHas) HasInput() bool {
+	return op.SourceGroups.HasInput() || op.DestinationGroups.HasInput()
 }
 
 func (op OperationHas) GetSourceGroups() []string {
@@ -141,6 +137,9 @@ func NewOperationHas() *OperationHas {
 		},
 		AbstractOperationView:   &AbstractOperationView{},
 		AbstractOperationUpdate: &AbstractOperationUpdate{},
+		AbstractOperationSeeds: &AbstractOperationSeeds{
+			Seeds: SeedCollection{},
+		},
 		SeedMatching:           "RELATED",
 	}
 }

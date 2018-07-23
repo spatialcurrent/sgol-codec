@@ -7,7 +7,7 @@ type OperationFetch struct {
 func NewOperationFetch(key string) OperationFetch {
 	return OperationFetch{
 		&AbstractOperationKey{
-			AbstractOperation: &AbstractOperation{Type: "DISCARD"},
+			AbstractOperation: &AbstractOperation{Type: "FETCH"},
 			Key:               key,
 		},
 	}

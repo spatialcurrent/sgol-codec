@@ -39,6 +39,10 @@ func NewGroupCollection(text string) GroupCollection {
 	return gc
 }
 
+func (gc GroupCollection) HasInput() bool {
+	return gc.Input
+}
+
 func (gc GroupCollection) GetGroups() []string {
 	return gc.Groups
 }

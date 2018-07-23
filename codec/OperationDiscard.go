@@ -1,18 +1,15 @@
 package codec
 
 type OperationDiscard struct {
-	*AbstractOperationKey
+	*AbstractOperation
 }
 
-func NewOperationDiscard(key string) OperationDiscard {
+func NewOperationDiscard() OperationDiscard {
 	return OperationDiscard{
-		&AbstractOperationKey{
-			AbstractOperation: &AbstractOperation{Type: "DISCARD"},
-			Key:               key,
-		},
+		AbstractOperation: &AbstractOperation{Type: "DISCARD"},
 	}
 }
 
 func (op OperationDiscard) Sgol() (string, error) {
-	return "DISCARD " + op.Key, nil
+	return "DISCARD", nil
 }

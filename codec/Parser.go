@@ -123,14 +123,14 @@ func (p *Parser) ParseEdges(text string) []string {
 
 func (p *Parser) ParseUpdate(block []string) (string, map[string]exp.Node, error) {
 	updateKey := block[0]
-	filterFunctionsByEntity := map[string]exp.Node{}
+	filterFunctionsByGroup := map[string]exp.Node{}
 	if len(block) > 3 {
 		ff, err := exp.Parse(p.Rejoin(block[4:]))
 		if err != nil {
-			return updateKey, filterFunctionsByEntity, err
+			return updateKey, filterFunctionsByGroup, err
 		}
 		if ff != nil {
-			filterFunctionsByEntity[block[2][1:]] = ff
+			filterFunctionsByGroup[block[2][1:]] = ff
 		}
 	}
 
@@ -145,44 +145,44 @@ func (p *Parser) ParseUpdate(block []string) (string, map[string]exp.Node, error
 		}
 	}*/
 
-	return updateKey, filterFunctionsByEntity, nil
+	return updateKey, filterFunctionsByGroup, nil
 }
 
 func (p *Parser) ParseFilter(block []string) (exp.Node, map[string]exp.Node, string, map[string]exp.Node, error) {
 
   var filterFunctionForAll exp.Node
-	filterFunctionsByEntity := map[string]exp.Node{}
+	filterFunctionsByGroup := map[string]exp.Node{}
 	updateKey := ""
-	updateFilterFunctionsByEntity := map[string]exp.Node{}
+	updatefilterFunctionsByGroup := map[string]exp.Node{}
 
 	if StringSliceContains(block, "UPDATE") {
 		blockUpdateIndex := StringSliceIndex(block, "UPDATE")
 		ff, err := exp.Parse(p.Rejoin(block[2:blockUpdateIndex]))
 		if err != nil {
-			return filterFunctionForAll, filterFunctionsByEntity, updateKey, updateFilterFunctionsByEntity, err
+			return filterFunctionForAll, filterFunctionsByGroup, updateKey, updatefilterFunctionsByGroup, err
 		}
 		if ff != nil {
-			filterFunctionsByEntity[block[0][1:len(block[0])]] = ff
+			filterFunctionsByGroup[block[0][1:len(block[0])]] = ff
 		}
-		updateKey, updateFilterFunctionsByEntity, err = p.ParseUpdate(block[blockUpdateIndex+1:])
+		updateKey, updatefilterFunctionsByGroup, err = p.ParseUpdate(block[blockUpdateIndex+1:])
 	} else {
 		if len(block) > 2 && block[1] == "WITH" {
 			ff, err := exp.Parse(p.Rejoin(block[2:len(block)]))
 			if err != nil {
-				return filterFunctionForAll, filterFunctionsByEntity, updateKey, updateFilterFunctionsByEntity, err
+				return filterFunctionForAll, filterFunctionsByGroup, updateKey, updatefilterFunctionsByGroup, err
 			}
 			if ff != nil {
-				filterFunctionsByEntity[block[0][1:len(block[0])]] = ff
+				filterFunctionsByGroup[block[0][1:len(block[0])]] = ff
 			}
 		} else {
 			ff, err := exp.Parse(p.Rejoin(block))
 			if err != nil {
-				return filterFunctionForAll, filterFunctionsByEntity, updateKey, updateFilterFunctionsByEntity, err
+				return filterFunctionForAll, filterFunctionsByGroup, updateKey, updatefilterFunctionsByGroup, err
 			}
 			filterFunctionForAll = ff
 		}
 	}
-	return filterFunctionForAll, filterFunctionsByEntity, updateKey, updateFilterFunctionsByEntity, nil
+	return filterFunctionForAll, filterFunctionsByGroup, updateKey, updatefilterFunctionsByGroup, nil
 }
 
 /*
@@ -334,8 +334,29 @@ func (p *Parser) ParseBlocks(tokens []string) [][]string {
 	return blocks
 }
 
+func (p *Parser) ParseRun(block []string) (*OperationRun, error) {
+	op := NewOperationRun()
+
+	re, err := regexp.Compile("(\\s*)(?P<name>([a-zA-Z_\\d]+))(\\s*)\\((\\s*)(?P<args>(.)*?)(\\s*)\\)(\\s*)")
+  if err != nil {
+    return op, err
+  }
+
+  node, err := exp.ParseFunction(p.Rejoin(block[1:]), "", re)
+	if err != nil {
+		return op, err
+	}
+	op.SetFunction(node.(*exp.Function))
+
+	return op, nil
+}
+
 func (p *Parser) ParseSelect(block []string) (*OperationSelect, error) {
 	op := NewOperationSelect()
+
+	if len(block) <= 1 {
+		return op, errors.New("Invalid SELECT clause.  Must include at least 2 terms.")
+	}
 
 	if strings.HasPrefix(block[1], "$") {
 		op.SetGroups(NewGroupCollection(block[1]))
@@ -431,15 +452,21 @@ func (p *Parser) ParseHas(block []string) (*OperationHas, error) {
 	op := NewOperationHas()
 
 	if block[1] == "INPUT" {
+		if strings.HasPrefix(block[3], "$") {
+			return op, errors.New("HAS operation requires seeds.")
+		}
 		op.SetSource(NewGroupCollection(block[1]))
-		op.SetDestination(NewGroupCollection(block[3]))
+		op.SetSeeds(NewSeedCollection(block[3]))
 		op.Direction = "OUTGOING"
-		op.EdgeIdentifierToExtract = "DESTINATION"
+		op.EdgeIdentifierToExtract = "SOURCE"
 	} else if block[3] == "INPUT" {
-		op.SetSource(NewGroupCollection(block[1]))
+		if strings.HasPrefix(block[1], "$") {
+			return op, errors.New("HAS operation requires seeds.")
+		}
+		op.SetSeeds(NewSeedCollection(block[1]))
 		op.SetDestination(NewGroupCollection(block[3]))
 		op.Direction = "INCOMING"
-		op.EdgeIdentifierToExtract = "SOURCE"
+		op.EdgeIdentifierToExtract = "DESTINATION"
 	} else {
 		return op, errors.New("Could not parse HAS block "+strings.Join(block, " "))
 	}
@@ -486,10 +513,10 @@ func (p *Parser) ParseOperations(blocks [][]string) ([]graph.Operation, string, 
 		switch block[0] {
 		case "INIT":
 			operations = append(operations, NewOperationInit(block[1]))
-		case "ADD":
-			operations = append(operations, NewOperationAdd(block[1]))
 		case "DISCARD":
-			operations = append(operations, NewOperationDiscard(block[1]))
+			operations = append(operations, NewOperationDiscard())
+		case "ADD":
+			operations = append(operations, NewOperationAdd(true))
 		case "RELATE":
 			operations = append(operations, NewOperationRelate([]string{block[1]}))
 		case "LIMIT":
@@ -521,7 +548,11 @@ func (p *Parser) ParseOperations(blocks [][]string) ([]graph.Operation, string, 
 		case "SEED":
 			operations = append(operations, NewOperationSeed())
 		case "RUN":
-			operations = append(operations, NewOperationRun(make([]string, 0)))
+			op, err := p.ParseRun(block)
+			if err != nil {
+				return operations, output_type, err
+			}
+			operations = append(operations, *op)
 		case "OUTPUT":
 			output_type = block[1]
 		}

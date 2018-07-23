@@ -17,7 +17,7 @@ type OperationNav struct {
 	*AbstractOperationOutput
 	*AbstractOperationView
 	*AbstractOperationUpdate
-	Seeds                   SeedCollection  `json:"seeds" bson:"seeds" yaml:"seeds" hcl:"seeds"`
+	*AbstractOperationSeeds
 	SourceGroups                  GroupCollection `json:"source" bson:"source" yaml:"source" hcl:"source"`
 	Edges                   GroupCollection `json:"edges" bson:"edges" yaml:"edges" hcl:"edges"`
 	DestinationGroups             GroupCollection `json:"destination" bson:"destination" yaml:"destination" hcl:"destination"`
@@ -74,6 +74,10 @@ func (op OperationNav) HasSeeds() bool {
 
 func (op OperationNav) GetSeeds() []string {
 	return op.Seeds.Vertices
+}
+
+func (op OperationNav) HasInput() bool {
+	return op.SourceGroups.HasInput() || op.DestinationGroups.HasInput()
 }
 
 func (op OperationNav) GetSourceGroups() []string {
@@ -145,5 +149,8 @@ func NewOperationNav() *OperationNav {
 		AbstractOperationView:   &AbstractOperationView{},
 		AbstractOperationUpdate: &AbstractOperationUpdate{},
 		SeedMatching:           "RELATED",
+		AbstractOperationSeeds: &AbstractOperationSeeds{
+			Seeds: SeedCollection{},
+		},
 	}
 }

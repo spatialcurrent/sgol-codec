@@ -14,12 +14,8 @@ type OperationSelect struct {
 	*AbstractOperationOutput
 	*AbstractOperationView
 	*AbstractOperationUpdate
-	Seeds  SeedCollection  `json:"seeds" bson:"seeds" yaml:"seeds" hcl:"seeds"`
+	*AbstractOperationSeeds
 	Groups GroupCollection `json:"groups" bson:"groups" yaml:"groups" hcl:"groups"`
-}
-
-func (op *OperationSelect) SetSeeds(seeds SeedCollection) {
-	op.Seeds = seeds
 }
 
 func (op *OperationSelect) SetGroups(groups GroupCollection) {
@@ -28,14 +24,6 @@ func (op *OperationSelect) SetGroups(groups GroupCollection) {
 
 func (op OperationSelect) HasGroup(group string) bool {
 	return op.Groups.HasGroup(group)
-}
-
-func (op OperationSelect) HasSeeds() bool {
-	return len(op.Seeds.Vertices) > 0
-}
-
-func (op OperationSelect) GetSeeds() []string {
-	return op.Seeds.Vertices
 }
 
 func (op OperationSelect) GetGroupNames() []string {
@@ -82,5 +70,8 @@ func NewOperationSelect() *OperationSelect {
 		},
 		AbstractOperationView:   &AbstractOperationView{},
 		AbstractOperationUpdate: &AbstractOperationUpdate{},
+		AbstractOperationSeeds: &AbstractOperationSeeds{
+			Seeds: SeedCollection{},
+		},
 	}
 }

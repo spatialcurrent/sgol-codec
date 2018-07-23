@@ -7,7 +7,7 @@ type OperationRelate struct {
 
 func NewOperationRelate(keys []string) OperationRelate {
 	return OperationRelate{
-		AbstractOperation: &AbstractOperation{Type: "DISCARD"},
+		AbstractOperation: &AbstractOperation{Type: "RELATE"},
 		Keys:              keys,
 	}
 }

@@ -1,17 +1,25 @@
 package codec
 
+import (
+	"github.com/spatialcurrent/go-graph/graph/exp"
+)
+
+
 type OperationRun struct {
 	*AbstractOperation
-	Operations []string `json:"operations" bson:"operations" yaml:"operations" hcl:"operations"`
+	Function *exp.Function `json:"function" bson:"function" yaml:"function" hcl:"function"`
 }
 
-func NewOperationRun(operations []string) OperationRun {
-	return OperationRun{
+func NewOperationRun() *OperationRun {
+	return &OperationRun{
 		AbstractOperation: &AbstractOperation{Type: "RUN"},
-		Operations:        operations,
 	}
 }
 
 func (op OperationRun) Sgol() (string, error) {
-	return "RUN", nil
+	return "RUN "+op.Function.Sgol(), nil
+}
+
+func (op *OperationRun) SetFunction(f *exp.Function) {
+	op.Function = f
 }
